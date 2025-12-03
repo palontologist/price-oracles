@@ -2,11 +2,14 @@ export enum CommodityCode {
   WHEAT = 'WHEAT',
   MAIZE = 'MAIZE',
   CORN = 'CORN', // Alias for MAIZE
+  WHEAT_FLOUR = 'WHEAT FLOUR',
+  MAIZE_FLOUR = 'MAIZE FLOUR',
 }
 
 export enum Region {
   AFRICA = 'AFRICA',
   LATAM = 'LATAM',
+  KENYA = 'KENYA',
 }
 
 export enum DataSource {
@@ -25,6 +28,7 @@ export interface PriceData {
   source: string;
   market?: string;
   unit?: string;
+  productType?: 'flour' | 'grain';
 }
 
 export interface OracleResponse {

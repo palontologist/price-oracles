@@ -1,26 +1,51 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PriceData } from '@/lib/types';
+
+interface FlourPriceData {
+  commodity: string;
+  market: string;
+  priceKES: number;
+  pricePerKgKES: number;
+  priceUSD: number;
+  pricePerMtUSD: number;
+  unit: string;
+  date: string;
+}
+
+interface FlourApiResponse {
+  success: boolean;
+  data: FlourPriceData[];
+  timestamp: string;
+  source: string;
+  exchangeRate?: number;
+  note?: string;
+  error?: string;
+}
 
 export default function Dashboard() {
-  const [prices, setPrices] = useState<PriceData[]>([]);
+  const [prices, setPrices] = useState<FlourPriceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [exchangeRate, setExchangeRate] = useState<number>(154);
 
   const fetchPrices = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/oracle/wheat-maize');
-      const data = await response.json();
+      // Fetch flour prices from the new Kenya flour endpoint
+      const response = await fetch('/api/oracle/kenya-flour');
+      const data: FlourApiResponse = await response.json();
 
       if (data.success) {
         setPrices(data.data);
         setLastUpdated(new Date().toLocaleString());
+        if (data.exchangeRate) {
+          setExchangeRate(data.exchangeRate);
+        }
       } else {
         setError(data.error || 'Failed to fetch prices');
       }
@@ -47,38 +72,28 @@ export default function Dashboard() {
   }, [autoRefresh]);
 
   const getCommodityIcon = (commodity: string) => {
-    if (commodity === 'WHEAT') return '🌾';
-    if (commodity === 'MAIZE' || commodity === 'CORN') return '🌽';
+    if (commodity.includes('WHEAT')) return '🌾';
+    if (commodity.includes('MAIZE') || commodity.includes('CORN')) return '🌽';
     return '📊';
   };
 
-  const getSourceColor = (source: string) => {
-    switch (source) {
-      case 'Alpha Vantage':
-        return 'bg-blue-100 text-blue-800';
-      case 'Kamis':
-        return 'bg-orange-100 text-orange-800';
-      case 'Tridge':
-        return 'bg-green-100 text-green-800';
-      case 'World Bank':
-        return 'bg-purple-100 text-purple-800';
-      case 'Fallback':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Group prices by commodity type
+  const wheatFlourPrices = prices.filter(p => p.commodity === 'WHEAT FLOUR');
+  const maizeFlourPrices = prices.filter(p => p.commodity === 'MAIZE FLOUR');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-amber-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            🌾 Commodity Price Oracles
+            🇰🇪 Kenya Flour Prices
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Real-time Wheat & Maize Floor Prices
+            Real-time Wheat Flour & Maize Flour Prices from KAMIS
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Exchange Rate: 1 USD = {exchangeRate} KES
           </p>
         </div>
 
@@ -88,7 +103,7 @@ export default function Dashboard() {
             <button
               onClick={fetchPrices}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Refreshing...' : '🔄 Refresh'}
             </button>
@@ -98,7 +113,7 @@ export default function Dashboard() {
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 Auto-refresh (60s)
@@ -121,112 +136,132 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Price Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {loading && prices.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-300">Loading prices...</p>
-            </div>
-          ) : (
-            prices.map((price, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-4xl">{getCommodityIcon(price.commodity)}</span>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {price.commodity}
-                      </h2>
-                      {price.market && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          📍 {price.market}
+        {/* Loading State */}
+        {loading && prices.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading flour prices...</p>
+          </div>
+        ) : (
+          <>
+            {/* Wheat Flour Section */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                <span className="mr-2">🌾</span> Wheat Flour (Unga wa Ngano)
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {wheatFlourPrices.map((price, index) => (
+                  <div
+                    key={index}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 hover:shadow-xl transition-shadow border-l-4 border-amber-500"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        📍 {price.market}
+                      </p>
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                        KAMIS
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Main Price in KES */}
+                      <div className="flex items-baseline space-x-1">
+                        <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                          {price.priceKES.toFixed(0)}
+                        </span>
+                        <span className="text-lg text-gray-600 dark:text-gray-300">
+                          KES
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        per {price.unit} packet
+                      </div>
+
+                      {/* Price per KG */}
+                      <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <span className="font-medium">{price.pricePerKgKES.toFixed(0)} KES</span> per kg
                         </p>
-                      )}
+                      </div>
                     </div>
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${getSourceColor(
-                      price.source
-                    )}`}
-                  >
-                    {price.source}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-baseline space-x-2">
-                    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                      {price.price.toFixed(2)}
-                    </span>
-                    <span className="text-xl text-gray-600 dark:text-gray-300">
-                      {price.currency}
-                    </span>
-                  </div>
-                  
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    per {price.unit || 'MT'} (Metric Ton)
-                  </div>
-
-                  <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Updated: {new Date(price.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))
-          )}
-        </div>
+            </div>
+
+            {/* Maize Flour Section */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                <span className="mr-2">🌽</span> Maize Flour (Unga wa Mahindi)
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {maizeFlourPrices.map((price, index) => (
+                  <div
+                    key={index}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 hover:shadow-xl transition-shadow border-l-4 border-yellow-500"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        📍 {price.market}
+                      </p>
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                        KAMIS
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Main Price in KES */}
+                      <div className="flex items-baseline space-x-1">
+                        <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {price.priceKES.toFixed(0)}
+                        </span>
+                        <span className="text-lg text-gray-600 dark:text-gray-300">
+                          KES
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        per {price.unit} packet
+                      </div>
+
+                      {/* Price per KG */}
+                      <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          <span className="font-medium">{price.pricePerKgKES.toFixed(0)} KES</span> per kg
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Info Section */}
-        <div className="mt-8 bg-blue-50 dark:bg-gray-800 rounded-lg p-6">
+        <div className="mt-8 bg-green-50 dark:bg-gray-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            📊 Data Sources
+            📊 About This Data
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
-            <div className="flex items-start space-x-2">
-              <span className="text-blue-600 font-bold">1.</span>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Alpha Vantage</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">Real-time market data</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-orange-600 font-bold">2.</span>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Kamis</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">Kenya Ag Market System</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-green-600 font-bold">3.</span>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Tridge</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">Kenya market prices</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-purple-600 font-bold">4.</span>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">World Bank</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">Monthly commodity data</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-gray-600 font-bold">5.</span>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Fallback</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs">Static baseline prices</p>
-              </div>
-            </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+            <p>
+              <strong>Source:</strong> KAMIS (Kenya Agricultural Market Information System) - 
+              <a href="https://kamis.kilimo.go.ke/site/market" target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline ml-1">
+                kamis.kilimo.go.ke
+              </a>
+            </p>
+            <p>
+              <strong>Wheat Flour (Unga wa Ngano):</strong> Used for chapati, mandazi, bread, cakes
+            </p>
+            <p>
+              <strong>Maize Flour (Unga wa Mahindi):</strong> Used for ugali, uji (porridge)
+            </p>
+            <p className="text-xs mt-3 text-gray-500">
+              Prices shown are for standard 2kg packets. Prices may vary by brand and retailer.
+            </p>
           </div>
-          <p className="mt-4 text-xs text-gray-600 dark:text-gray-400">
-            Prices automatically fallback through multiple sources to ensure availability.
-          </p>
         </div>
 
         {/* API Info */}
@@ -239,13 +274,20 @@ export default function Dashboard() {
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">
                 GET
               </span>
-              <code className="text-gray-700 dark:text-gray-300">/api/oracle/wheat-maize</code>
+              <code className="text-gray-700 dark:text-gray-300">/api/oracle/kenya-flour</code>
+              <span className="text-gray-500 text-xs">- All flour prices</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">
                 GET
               </span>
-              <code className="text-gray-700 dark:text-gray-300">/api/live-prices</code>
+              <code className="text-gray-700 dark:text-gray-300">/api/oracle/kenya-flour?commodity=wheat-flour</code>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">
+                GET
+              </span>
+              <code className="text-gray-700 dark:text-gray-300">/api/oracle/kenya-flour?commodity=maize-flour</code>
             </div>
           </div>
         </div>
