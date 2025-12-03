@@ -58,7 +58,7 @@ export default function Home() {
         </div>
 
         <div className="mt-8 text-sm text-gray-600 dark:text-gray-400">
-          <p>Built with Next.js 15, TypeScript, and Tailwind CSS</p>
+          <p>Built with Next.js 16, TypeScript, and Tailwind CSS</p>
         </div>
       </main>
     </div>
