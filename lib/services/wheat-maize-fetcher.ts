@@ -1,5 +1,6 @@
 import { PriceData, DataSource } from '../types';
 import { scrapeTridgePrices, getMockTridgePrice } from '../scrapers/tridge-scraper';
+import { scrapeKamisWheatMaizePrices, convertKamisPriceToUSD, getMockKamisPrices } from '../scrapers/kamis-scraper';
 import { fetchWorldBankPrices } from './world-bank-fetcher';
 import { fetchAlphaVantagePrices } from './alpha-vantage-fetcher';
 
@@ -13,6 +14,7 @@ export interface FetchOptions {
   commodity?: 'WHEAT' | 'MAIZE';
   historical?: boolean;
   useMockTridge?: boolean;
+  useMockKamis?: boolean;
 }
 
 export async function fetchWheatMaizePrices(options: FetchOptions = {}): Promise<PriceData[]> {
@@ -22,6 +24,7 @@ export async function fetchWheatMaizePrices(options: FetchOptions = {}): Promise
   
   const results: PriceData[] = [];
   const useMockTridge = options.useMockTridge || process.env.USE_MOCK_TRIDGE === 'true';
+  const useMockKamis = options.useMockKamis || process.env.USE_MOCK_KAMIS === 'true';
 
   // Try each data source in priority order
   // 1. Alpha Vantage (if API key configured)
@@ -43,7 +46,40 @@ export async function fetchWheatMaizePrices(options: FetchOptions = {}): Promise
     }
   }
 
-  // 2. Tridge.com - Kenya-specific market prices
+  // 2. Kamis - Kenya Agricultural Market Information System (Local Kenyan prices)
+  for (const commodity of commodities) {
+    if (!results.find(r => r.commodity === commodity)) {
+      try {
+        let kamisPrices;
+        
+        if (useMockKamis) {
+          kamisPrices = getMockKamisPrices();
+        } else {
+          kamisPrices = await scrapeKamisWheatMaizePrices();
+        }
+
+        const matchingPrice = kamisPrices.find(p => p.commodity === commodity);
+        if (matchingPrice) {
+          // Convert Kamis price (KES/KG or KES/BAG) to USD/MT
+          const convertedPrice = convertKamisPriceToUSD(matchingPrice);
+          
+          results.push({
+            commodity: convertedPrice.commodity,
+            price: convertedPrice.price,
+            currency: convertedPrice.currency,
+            timestamp: convertedPrice.date,
+            source: DataSource.KAMIS,
+            market: convertedPrice.market,
+            unit: 'MT',
+          });
+        }
+      } catch {
+        console.log(`Kamis fetch failed for ${commodity}, continuing to next source`);
+      }
+    }
+  }
+
+  // 3. Tridge.com - Kenya-specific market prices
   for (const commodity of commodities) {
     if (!results.find(r => r.commodity === commodity)) {
       try {
@@ -73,7 +109,7 @@ export async function fetchWheatMaizePrices(options: FetchOptions = {}): Promise
     }
   }
 
-  // 3. World Bank Pink Sheet - Monthly commodity data
+  // 4. World Bank Pink Sheet - Monthly commodity data
   for (const commodity of commodities) {
     if (!results.find(r => r.commodity === commodity)) {
       try {
@@ -96,7 +132,7 @@ export async function fetchWheatMaizePrices(options: FetchOptions = {}): Promise
     }
   }
 
-  // 4. Fallback prices - Static prices as last resort
+  // 5. Fallback prices - Static prices as last resort
   for (const commodity of commodities) {
     if (!results.find(r => r.commodity === commodity)) {
       results.push({

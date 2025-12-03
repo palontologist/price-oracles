@@ -11,6 +11,7 @@ export enum Region {
 
 export enum DataSource {
   ALPHA_VANTAGE = 'Alpha Vantage',
+  KAMIS = 'Kamis',
   TRIDGE = 'Tridge',
   WORLD_BANK = 'World Bank',
   FALLBACK = 'Fallback',

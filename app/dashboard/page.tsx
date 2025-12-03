@@ -56,6 +56,8 @@ export default function Dashboard() {
     switch (source) {
       case 'Alpha Vantage':
         return 'bg-blue-100 text-blue-800';
+      case 'Kamis':
+        return 'bg-orange-100 text-orange-800';
       case 'Tridge':
         return 'bg-green-100 text-green-800';
       case 'World Bank':
@@ -185,7 +187,7 @@ export default function Dashboard() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
             📊 Data Sources
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
             <div className="flex items-start space-x-2">
               <span className="text-blue-600 font-bold">1.</span>
               <div>
@@ -194,21 +196,28 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-green-600 font-bold">2.</span>
+              <span className="text-orange-600 font-bold">2.</span>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Kamis</p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs">Kenya Ag Market System</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-green-600 font-bold">3.</span>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Tridge</p>
                 <p className="text-gray-600 dark:text-gray-400 text-xs">Kenya market prices</p>
               </div>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-purple-600 font-bold">3.</span>
+              <span className="text-purple-600 font-bold">4.</span>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">World Bank</p>
                 <p className="text-gray-600 dark:text-gray-400 text-xs">Monthly commodity data</p>
               </div>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-gray-600 font-bold">4.</span>
+              <span className="text-gray-600 font-bold">5.</span>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Fallback</p>
                 <p className="text-gray-600 dark:text-gray-400 text-xs">Static baseline prices</p>

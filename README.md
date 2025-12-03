@@ -6,6 +6,7 @@ A Next.js 15 application for wheat and maize floor price oracles, providing real
 
 This application fetches and displays real-time wheat and maize prices from multiple data sources:
 - **Alpha Vantage** - Real-time market data (if API key configured)
+- **Kamis (Kenya Agricultural Market Information System)** - Official Kenyan government agricultural market prices from https://kamis.kilimo.go.ke/site/market
 - **Tridge.com** - Kenya-specific market prices
 - **World Bank Pink Sheet** - Monthly commodity data
 - **Fallback Prices** - Static baseline prices as last resort
@@ -62,6 +63,7 @@ DATABASE_AUTH_TOKEN=your_auth_token
 
 # Development/Testing Options
 USE_MOCK_TRIDGE=true  # Set to true for development without scraping
+USE_MOCK_KAMIS=true   # Set to true for development with mock Kamis data
 
 # Next.js Configuration
 NEXT_PUBLIC_API_URL=http://localhost:3000
@@ -244,6 +246,7 @@ price-oracles/
 │   │   ├── schema.ts                  # Database schema
 │   │   └── index.ts                   # Database client
 │   ├── scrapers/
+│   │   ├── kamis-scraper.ts           # Kamis (Kenya Ag Market) scraper
 │   │   └── tridge-scraper.ts          # Tridge.com scraper
 │   ├── services/
 │   │   ├── alpha-vantage-fetcher.ts   # Alpha Vantage API
@@ -267,10 +270,17 @@ price-oracles/
 - `ALPHA_VANTAGE_KEY` - API key for Alpha Vantage (optional)
 - `DATABASE_URL` - Turso/libSQL database URL
 - `DATABASE_AUTH_TOKEN` - Database authentication token
-- `USE_MOCK_TRIDGE` - Use mock data instead of scraping (development)
+- `USE_MOCK_TRIDGE` - Use mock data instead of scraping Tridge (development)
+- `USE_MOCK_KAMIS` - Use mock data instead of scraping Kamis (development)
 - `NEXT_PUBLIC_API_URL` - Public API URL for client-side calls
 
 ### Data Sources
+
+**Kamis (Kenya Agricultural Market Information System):**
+- URL: `https://kamis.kilimo.go.ke/site/market`
+- Official Kenyan government agricultural market prices
+- Provides real-time prices across multiple Kenyan markets
+- Currency: KES (Kenyan Shilling), auto-converted to USD/MT
 
 **Tridge URLs:**
 - Wheat: `https://dir.tridge.com/prices/wheat/KE`

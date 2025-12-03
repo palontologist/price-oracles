@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       sources: [
         DataSource.ALPHA_VANTAGE,
+        DataSource.KAMIS,
         DataSource.TRIDGE,
         DataSource.WORLD_BANK,
         DataSource.FALLBACK,
