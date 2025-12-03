@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const commodity = searchParams.get('commodity')?.toUpperCase();
-    const historical = searchParams.get('historical') === 'true';
 
     // Validate commodity parameter
     if (commodity && commodity !== 'WHEAT' && commodity !== 'MAIZE') {
@@ -27,16 +26,8 @@ export async function GET(request: NextRequest) {
       commodity: commodity as 'WHEAT' | 'MAIZE' | undefined,
     });
 
-    // If historical data is requested, try to fetch from database
-    if (historical) {
-      try {
-        // This would fetch historical data from the database
-        // For now, we'll just return current prices
-        // In a full implementation, you'd query the commodity_prices table
-      } catch {
-        console.log('Error fetching historical data');
-      }
-    }
+    // Note: Historical data fetching via 'historical' query parameter is not yet implemented
+    // TODO: Implement historical data querying from commodity_prices table
 
     const response: OracleResponse = {
       success: true,

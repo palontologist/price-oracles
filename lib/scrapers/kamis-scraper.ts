@@ -130,11 +130,17 @@ export async function scrapeKamisWheatMaizePrices(): Promise<KamisPrice[]> {
 
 /**
  * Converts Kamis price (typically in KES per KG) to USD per MT for consistency
- * Exchange rate should be provided or fetched from an API
+ * 
+ * @param kamisPrice - The Kamis price object to convert
+ * @param exchangeRate - KES to USD exchange rate (default: 150, approximately as of 2024)
+ * @returns Converted price in USD per MT
+ * 
+ * Note: The default exchange rate is approximate and should be updated regularly
+ * or fetched from a currency API for production use.
  */
 export function convertKamisPriceToUSD(
   kamisPrice: KamisPrice,
-  exchangeRate: number = 150 // Default KES to USD rate (approximate)
+  exchangeRate: number = parseFloat(process.env.KES_TO_USD_RATE || '150')
 ): TridgePrice {
   let priceInUSD = kamisPrice.price;
 
@@ -147,8 +153,10 @@ export function convertKamisPriceToUSD(
   if (kamisPrice.unit === 'KG' || kamisPrice.unit === 'KILOGRAM') {
     priceInUSD = priceInUSD * 1000;
   } else if (kamisPrice.unit === 'BAG') {
-    // Assuming a standard bag is 90kg in Kenya
-    priceInUSD = (priceInUSD / 90) * 1000;
+    // Standard bag size in Kenya is typically 90kg for grains
+    // Note: This may vary by commodity and region
+    const bagSizeKg = parseFloat(process.env.KAMIS_BAG_SIZE_KG || '90');
+    priceInUSD = (priceInUSD / bagSizeKg) * 1000;
   }
 
   return {

@@ -15,6 +15,18 @@ const COMMODITY_SYMBOLS = {
   MAIZE: 'CORN',
 };
 
+/**
+ * Fetches commodity prices from Alpha Vantage API
+ * 
+ * Note: This is a placeholder implementation. Alpha Vantage doesn't provide
+ * direct commodity price endpoints in the same way as stock data.
+ * In production, this should be replaced with actual commodity data endpoints
+ * or an alternative commodity price API.
+ * 
+ * @param commodity - The commodity to fetch (WHEAT or MAIZE)
+ * @param apiKey - Alpha Vantage API key
+ * @returns Price data or null if not available
+ */
 export async function fetchAlphaVantagePrice(
   commodity: 'WHEAT' | 'MAIZE',
   apiKey: string
